@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>문장 파괴 연구소</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:#111;color:#eee;
+  font-family:Arial,sans-serif;padding:35px 18px
+}
+.container{max-width:760px;margin:auto}
+h1{color:#ff5555;font-size:34px}
+.desc{color:#888;margin-bottom:30px}
+textarea{
+  width:100%;min-height:190px;padding:17px;
+  background:#202020;color:white;border:1px solid #444;
+  border-radius:12px;font-size:15px;line-height:1.8;
+  resize:vertical
+}
+button{
+  border:0;border-radius:9px;padding:14px;
+  cursor:pointer;font-weight:bold;margin-top:12px
+}
+.main{width:100%;background:#ff5555;color:white;font-size:17px}
+.secondary{background:#333;color:white}
+.output{
+  padding:18px;background:#202020;border:1px solid #444;
+  border-radius:12px;line-height:1.95;overflow-wrap:anywhere;
+  white-space:pre-wrap;min-height:180px
+}
+.settings{display:flex;align-items:center;gap:12px;margin:22px 0}
+.settings input{flex:1}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>문장 파괴 연구소</h1>
+<div class="desc">정상적인 사고를 비정상적인 문장으로 변환합니다.</div>
+
+<h3>원본 글</h3>
+<textarea id="source" placeholder="평범한 글을 입력하세요."></textarea>
+
+<div class="settings">
+<label>글의 더러움</label>
+<input type="range" id="level" min="1" max="10" value="7">
+<span id="number">7</span>
+</div>
+
+<button class="main" onclick="generate()">글을 망가뜨리기</button>
+
+<h3>변환된 글</h3>
+<div class="output" id="result">아직 변환된 글이 없습니다.</div>
+
+<button class="secondary" onclick="copyText()">결과 복사</button>
+<button class="secondary" onclick="generate()">다시 생성</button>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+$("level").oninput = () => {
+  $("number").textContent = $("level").value;
+};
+
+function random(arr) {
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+// 문장 자체를 망가뜨리는 것이 아니라
+// 문장에 담긴 생각을 계속 확장하는 표현들
+const expansions = [
+s => `근데 여기서 생각을 해봐야 되는 부분이 있는게 ${s} 그렇다고 해서 이 말이 틀렸다는건 또 아니고 맞다는 것도 결국 이 말이 맞다는 전제하에 맞는거니까 조금 다르게 생각해볼 필요가 있는거 같음.`,
+s => `왜냐하면 결국 ${s} 라는건데 이게 말로 하면 별거 아닌거 같지만 막상 생각해보면 별거 아닌것도 아니고 그렇다고 별거인것도 아니라서 이 부분을 어떻게 받아들여야 하는지가 조금 애매한거 같음.`,
+s => `근데 또 반대로 생각해보면 ${s} 라고 볼 수도 있잖아. 물론 이렇게 생각한다고 해서 처음에 했던 생각이 없어지는건 아니니까 결국 처음 생각했던 부분과 나중에 생각한 부분이 서로 다른거 같으면서도 같은 이야기를 하고 있는거 같음.`,
+s => `여기서 중요한건 이게 왜 중요하냐는건데 사실 중요하다고 생각하기 때문에 중요하게 느껴지는건지 아니면 원래부터 중요한 부분이었기 때문에 중요하게 생각하게 된건지는 잘 모르겠음.`,
+s => `그렇다고 이걸 무조건 그렇다고 할 수는 없는게 그렇지 않은 경우도 분명히 있을거고 그렇다고 그렇지 않다고 하기에도 그렇다고 할 수 있는 부분이 있기 때문에 결국 어느 한쪽만 맞다고 하기에는 조금 어려운거 같음.`,
+s => `그리고 이게 처음부터 이렇게 된건지 아니면 이렇게 되다보니까 처음부터 이런거였는지는 모르겠는데 아무튼 지금 상황에서는 이렇게 된 이상 이렇게 생각할 수밖에 없는거 같기도 함.`,
+s => `그러니까 내가 하고 싶은 말은 결국 이 말을 하고 싶다는건데 이 말을 한다고 해서 내가 하고 싶은 말이 전부 전달되는건 아니니까 전달이 됐다고 생각하는것과 실제로 전달이 된것 사이에도 조금 차이가 있을 수 있다는거임.`,
+s => `사실 이 부분은 굳이 설명하지 않아도 알 수 있을거 같지만 설명하지 않으면 설명이 안 된 부분이 되는거니까 설명을 해야 되는건 맞는거 같고 그렇다고 설명을 한다고 해서 전부 설명이 되는것도 아니니까.`,
+s => `근데 또 이걸 생각하다보면 처음에 왜 이런 생각을 했는지부터 생각하게 되는데 생각을 하게 된 이유를 생각하다보면 지금 생각하고 있는 생각이 처음 생각과 같은 생각인지도 조금 헷갈리게 되는거 같음.`,
+s => `결국 이 말 자체가 말하고 있는건 말 그대로 이 말이라는건데 이 말을 다른 말로 바꿔서 말한다고 해도 결국 같은 말을 하고 있는거라면 굳이 다른 말을 하는게 맞는건지에 대한 생각도 해봐야 될거 같음.`
+];
+
+const conclusions = [
+`결론적으로 하긴 해야 되는거 같으면서도 안 했으면 좋겠고 그렇다고 안 하는게 맞는건 또 아니니까 결국 해야 되는 상황이라는건 알겠는데 그 상황이 마음에 드는건 아니라는거임.`,
+`아무튼 처음부터 다시 생각해보면 처음에 생각했던게 결국 지금 생각하고 있는거랑 크게 다르지 않은거 같고 그렇다고 지금 생각이 처음 생각과 똑같은건 아니니까 생각을 더 해봐야 될거 같음.`,
+`그러니까 결국 결론은 결론을 내야 된다는건데 결론을 내린다고 해서 모든게 끝나는건 아니고 결론을 내리지 않는다고 해서 문제가 없어지는것도 아니니까 이게 참 어려운 부분인거 같음.`,
+`그래서 나는 아직도 어떻게 하는게 맞는건지 모르겠는데 그렇다고 모른다고 해서 아무것도 모르는건 아니고 어느정도 알고는 있지만 정확하게 알고 있는건 또 아니니까 조금 더 생각을 해보려고 함.`
+];
+
+function splitSentences(text) {
+  return text.replace(/\n+/g," ")
+    .match(/[^.!?]+[.!?]?/g)
+    ?.map(s=>s.trim())
+    .filter(s=>s.length>0) || [text];
+}
+
+function generate() {
+  const source = $("source").value.trim();
+  if(!source) {
+    alert("원본 글을 입력해주세요.");
+    return;
+  }
+
+  const level = Number($("level").value);
+  const sentences = splitSentences(source);
+
+  // 원문의 문장을 그대로 복제하지 않고
+  // 각 문장이 가진 의미를 설명하는 방향으로 확장
+  let result = [];
+
+  sentences.forEach((sentence,index)=>{
+    result.push(sentence);
+
+    const amount = Math.ceil(level/2);
+
+    for(let i=0;i<amount;i++){
+      let template = random(expansions);
+      result.push(template(sentence));
+    }
+
+    if(index < sentences.length-1 && level >= 5) {
+      result.push(
+        `근데 이 부분이 다음에 나오는 이야기와 연결이 되는거 같으면서도 꼭 연결이 되어야 하는건 아니니까 이걸 별개로 봐야 되는건지 같이 봐야 되는건지는 조금 더 생각해봐야 할거 같음.`
+      );
+    }
+  });
+
+  // 중간중간 원래 이야기로 돌아오게 만들기
+  for(let i=0;i<Math.floor(level/2);i++){
+    result.push(random(conclusions));
+  }
+
+  // 마지막에는 결론을 내리는 듯하다가 다시 유보
+  result.push(random(conclusions));
+
+  $("result").textContent = result.join(" ");
+}
+
+async function copyText(){
+  const text = $("result").textContent;
+  if(text==="아직 변환된 글이 없습니다.") return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("복사 완료!");
+  } catch(e) {
+    alert("복사에 실패했습니다.");
+  }
+}
+</script>
+</body>
+</html>

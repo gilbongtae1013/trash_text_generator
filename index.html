@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>문장 파괴기</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 40px 20px;
+      background: #101010;
+      color: #f2f2f2;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      letter-spacing: -1.5px;
+    }
+
+    .description {
+      color: #888;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    label {
+      display: block;
+      margin: 22px 0 10px;
+      font-size: 14px;
+      color: #bbb;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 190px;
+      padding: 18px;
+      resize: vertical;
+      border: 1px solid #333;
+      border-radius: 12px;
+      outline: none;
+      background: #1b1b1b;
+      color: white;
+      font: inherit;
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    textarea:focus {
+      border-color: #888;
+    }
+
+    .settings {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: white;
+    }
+
+    #levelValue {
+      min-width: 35px;
+      color: #aaa;
+      text-align: right;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      border: 0;
+      border-radius: 10px;
+      background: #f2f2f2;
+      color: #111;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #ccc;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 30px 0 10px;
+    }
+
+    .result-header label {
+      margin: 0;
+    }
+
+    .copy-button {
+      width: auto;
+      padding: 8px 13px;
+      background: #292929;
+      color: white;
+      font-size: 13px;
+    }
+
+    .result {
+      min-height: 190px;
+      padding: 18px;
+      border: 1px solid #333;
+      border-radius: 12px;
+      background: #1b1b1b;
+      color: #ddd;
+      font-size: 15px;
+      line-height: 1.9;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .placeholder {
+      color: #666;
+    }
+
+    .status {
+      min-height: 24px;
+      margin-top: 12px;
+      color: #999;
+      font-size: 13px;
+    }
+
+    @media (max-width: 500px) {
+      body {
+        padding: 30px 16px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <h1>문장 파괴기</h1>
+    <div class="description">
+      평범한 문장을 읽을수록 이상하고 답답하게 만들어 드립니다.
+    </div>
+
+    <label for="inputText">원본 문장</label>
+    <textarea
+      id="inputText"
+      placeholder="변환하고 싶은 문장을 입력하세요."
+    ></textarea>
+
+    <label for="level">문장 파괴 강도</label>
+    <div class="settings">
+      <input
+        id="level"
+        type="range"
+        min="1"
+        max="10"
+        value="8"
+      />
+      <span id="levelValue">8 / 10</span>
+    </div>
+
+    <button id="rewriteButton" type="button">
+      문장 파괴하기
+    </button>
+
+    <div class="result-header">
+      <label>파괴된 문장</label>
+      <button class="copy-button" id="copyButton" type="button">
+        복사하기
+      </button>
+    </div>
+
+    <div id="result" class="result">
+      <span class="placeholder">변환된 문장이 여기에 표시됩니다.</span>
+    </div>
+
+    <div id="status" class="status"></div>
+  </main>
+
+  <script>
+    const inputText = document.getElementById("inputText");
+    const level = document.getElementById("level");
+    const levelValue = document.getElementById("levelValue");
+    const rewriteButton = document.getElementById("rewriteButton");
+    const copyButton = document.getElementById("copyButton");
+    const result = document.getElementById("result");
+    const status = document.getElementById("status");
+
+    level.addEventListener("input", () => {
+      levelValue.textContent = `${level.value} / 10`;
+    });
+
+    rewriteButton.addEventListener("click", async () => {
+      const text = inputText.value.trim();
+
+      if (!text) {
+        status.textContent = "먼저 원본 문장을 입력해주세요.";
+        inputText.focus();
+        return;
+      }
+
+      rewriteButton.disabled = true;
+      rewriteButton.textContent = "문장을 파괴하는 중...";
+      status.textContent = "AI가 문장을 재구성하고 있습니다.";
+
+      result.textContent = "";
+
+      try {
+        const response = await fetch("/api/rewrite", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            text: text,
+            level: Number(level.value)
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || `서버 오류가 발생했습니다. (${response.status})`
+          );
+        }
+
+        if (!data.result) {
+          throw new Error("AI가 결과를 반환하지 않았습니다.");
+        }
+
+        result.textContent = data.result;
+        status.textContent = "문장 파괴 완료.";
+
+      } catch (error) {
+        result.textContent = "문장 변환에 실패했습니다.";
+        status.textContent = error.message;
+        console.error(error);
+
+      } finally {
+        rewriteButton.disabled = false;
+        rewriteButton.textContent = "문장 파괴하기";
+      }
+    });
+
+    copyButton.addEventListener("click", async () => {
+      const text = result.textContent.trim();
+
+      if (!text || text === "문장 변환에 실패했습니다.") {
+        status.textContent = "복사할 문장이 없습니다.";
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = "결과를 복사했습니다.";
+      } catch {
+        status.textContent = "복사에 실패했습니다. 결과를 직접 선택해주세요.";
+      }
+    });
+  </script>
+</body>
+</html>
