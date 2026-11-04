@@ -171,17 +171,6 @@
       placeholder="변환하고 싶은 문장을 입력하세요."
     ></textarea>
 
-    <label for="level">문장 파괴 강도</label>
-    <div class="settings">
-      <input
-        id="level"
-        type="range"
-        min="1"
-        max="10"
-        value="8"
-      />
-      <span id="levelValue">8 / 10</span>
-    </div>
 
     <button id="rewriteButton" type="button">
       문장 파괴하기
@@ -237,7 +226,6 @@
           },
           body: JSON.stringify({
             text: text,
-            level: Number(level.value)
           })
         });
 
